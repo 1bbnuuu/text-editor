@@ -1,1035 +1,274 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clean Text Editor</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-        
-        .editor-content {
-            min-height: 400px;
-            outline: none;
-            font-size: 18px;
-            line-height: 1.6;
-            color: #1a1a1a;
-            font-weight: 400;
-        }
-        
-        .editor-content:focus {
-            outline: none;
-        }
-        
-        .toolbar {
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
-            pointer-events: none;
-        }
-        
-        .toolbar.visible {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: all;
-        }
-        
-        .toolbar-btn {
-            @apply w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200;
-        }
-        
-        .toolbar-btn.active {
-            @apply text-gray-900 bg-gray-100;
-        }
-        
-        .format-select {
-            @apply px-3 py-2 text-sm border-0 bg-transparent text-gray-700 focus:outline-none cursor-pointer;
-        }
-        
-        .action-btn {
-            @apply px-4 py-2 text-sm font-medium rounded-full transition-all duration-200;
-        }
-        
-        .action-btn.primary {
-            @apply bg-black text-white hover:bg-gray-800;
-        }
-        
-        .action-btn.secondary {
-            @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
-        }
-        
-        /* Editor Content Styles */
-        .editor-content h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            line-height: 1.2;
-            margin: 2rem 0 1rem 0;
-            color: #1a1a1a;
-        }
-        
-        .editor-content h2 {
-            font-size: 2rem;
-            font-weight: 600;
-            line-height: 1.3;
-            margin: 1.5rem 0 0.75rem 0;
-            color: #1a1a1a;
-        }
-        
-        .editor-content h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            line-height: 1.4;
-            margin: 1.25rem 0 0.5rem 0;
-            color: #1a1a1a;
-        }
-        
-        .editor-content h4, .editor-content h5, .editor-content h6 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            line-height: 1.4;
-            margin: 1rem 0 0.5rem 0;
-            color: #1a1a1a;
-        }
-        
-        .editor-content p {
-            margin: 1.5rem 0;
-            line-height: 1.7;
-            color: #374151;
-            font-size: 18px;
-        }
-        
-        .editor-content strong, .editor-content b {
-            font-weight: 600;
-            color: #1a1a1a;
-        }
-        
-        .editor-content em, .editor-content i {
-            font-style: italic;
-        }
-        
-        .editor-content u {
-            text-decoration: underline;
-            text-underline-offset: 2px;
-        }
-        
-        .editor-content s {
-            text-decoration: line-through;
-            opacity: 0.7;
-        }
-        
-        .editor-content a {
-            color: #2563eb;
-            text-decoration: underline;
-            text-underline-offset: 2px;
-            text-decoration-thickness: 1px;
-        }
-        
-        .editor-content a:hover {
-            text-decoration-thickness: 2px;
-        }
-        
-        .editor-content ul, .editor-content ol {
-            margin: 1.5rem 0;
-            padding-left: 2rem;
-        }
-        
-        .editor-content li {
-            margin: 0.5rem 0;
-            line-height: 1.7;
-        }
-        
-        .editor-content ul li {
-            list-style-type: disc;
-        }
-        
-        .editor-content ol li {
-            list-style-type: decimal;
-        }
-        
-        .editor-content blockquote {
-            margin: 2rem 0;
-            padding: 0 0 0 1.5rem;
-            border-left: 3px solid #e5e7eb;
-            font-style: italic;
-            color: #6b7280;
-            font-size: 1.1em;
-        }
-        
-        .editor-content code {
-            background-color: #f3f4f6;
-            color: #ef4444;
-            padding: 0.15rem 0.4rem;
-            border-radius: 0.25rem;
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-            font-size: 0.9em;
-        }
-        
-        .editor-content hr {
-            margin: 3rem auto;
-            border: none;
-            height: 1px;
-            background-color: #e5e7eb;
-            width: 100%;
-        }
-        
-        .placeholder {
-            color: #9ca3af;
-            font-size: 18px;
-            line-height: 1.6;
-            position: absolute;
-            pointer-events: none;
-            top: 0;
-            left: 0;
-            opacity: 1;
-            transition: opacity 0.3s ease;
-        }
-        
-        .placeholder.hidden {
-            opacity: 0;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Text Editor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    #editor-area blockquote {
+      border-left: 3px solid #aaa;
+      margin: 0.5rem 0;
+      padding: 0.4rem 1rem;
+      color: #555;
+      background: #f9f9f9;
+    }
+    #editor-area a { color: #2563eb; text-decoration: underline; }
+    #editor-area img { max-width: 100%; border-radius: 6px; margin: 8px 0; display: block; }
+    #editor-area ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin: 0.4em 0; }
+    #editor-area ol { list-style-type: decimal !important; padding-left: 1.5rem !important; margin: 0.4em 0; }
+    #editor-area li { display: list-item !important; }
+    #editor-area h1 { font-size: 2em; font-weight: 600; margin: 0.4em 0; }
+    #editor-area h2 { font-size: 1.6em; font-weight: 600; margin: 0.4em 0; }
+    #editor-area h3 { font-size: 1.3em; font-weight: 600; margin: 0.4em 0; }
+    #editor-area h4 { font-size: 1.1em; font-weight: 600; margin: 0.4em 0; }
+    #editor-area h5 { font-size: 0.95em; font-weight: 600; margin: 0.4em 0; }
+    #editor-area h6 { font-size: 0.85em; font-weight: 600; margin: 0.4em 0; color: #777; }
+  </style>
 </head>
-<body class="bg-white min-h-screen">
-    <!-- Header -->
-    <header class="border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
-        <div class="max-w-4xl mx-auto px-6 py-4">
-            <div class="flex items-center justify-between">
-                <h1 class="text-xl font-semibold text-gray-900">Editor</h1>
-                <div class="flex items-center gap-3">
-                    <button id="previewBtn" class="action-btn secondary">
-                        <i class="fas fa-eye mr-2"></i>
-                    </button>
-                    <button id="copyBtn" class="action-btn primary">
-                        <i class="fas fa-copy mr-2"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
 
-    <!-- Main Editor -->
-    <main class="max-w-4xl mx-auto px-6 py-12">
-        <!-- Format Toolbar - Floating -->
-        <div id="toolbar" class="toolbar fixed bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex items-center gap-1 z-50" style="display: none;">
-            <select id="formatBlock" class="format-select">
-                <option value="p">Paragraph</option>
-                <option value="h1">Heading 1</option>
-                <option value="h2">Heading 2</option>
-                <option value="h3">Heading 3</option>
-            </select>
-            
-            <div class="w-px h-6 bg-gray-300 mx-2"></div>
-            
-            <button class="toolbar-btn" data-command="bold" title="Bold">
-                <i class="fas fa-bold"></i>
-            </button>
-            <button class="toolbar-btn" data-command="italic" title="Italic">
-                <i class="fas fa-italic"></i>
-            </button>
-            <button class="toolbar-btn" data-command="underline" title="Underline">
-                <i class="fas fa-underline"></i>
-            </button>
-            
-            <div class="w-px h-6 bg-gray-300 mx-2"></div>
-            
-            <button class="toolbar-btn" id="linkBtn" title="Link">
-                <i class="fas fa-link"></i>
-            </button>
-            <button class="toolbar-btn" id="blockquoteBtn" title="Quote">
-                <i class="fas fa-quote-left"></i>
-            </button>
-            <button class="toolbar-btn" id="codeBtn" title="Code">
-                <i class="fas fa-code"></i>
-            </button>
-            
-            <div class="w-px h-6 bg-gray-300 mx-2"></div>
-            
-            <button class="toolbar-btn" data-command="insertUnorderedList" title="Bullet List">
-                <i class="fas fa-list-ul"></i>
-            </button>
-            <button class="toolbar-btn" data-command="insertOrderedList" title="Numbered List">
-                <i class="fas fa-list-ol"></i>
-            </button>
-            
-            <div class="w-px h-6 bg-gray-300 mx-2"></div>
-            
-            <button class="toolbar-btn" data-command="undo" title="Undo">
-                <i class="fas fa-undo"></i>
-            </button>
-            <button class="toolbar-btn" data-command="redo" title="Redo">
-                <i class="fas fa-redo"></i>
-            </button>
-        </div>
+<body class="bg-gray-50 font-sans">
 
-        <!-- Editor Container -->
-        <div class="relative">
-            <div id="placeholder" class="placeholder">
-                Start writing your story...
-            </div>
-            <div id="editor" class="editor-content focus:outline-none" contenteditable="true"></div>
-        </div>
-    </main>
+<main class="max-w-3xl mx-auto my-10 bg-white border border-gray-200 rounded-xl shadow-sm">
 
-    <!-- Preview Modal -->
-    <div id="previewModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-6">
-        <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-            <div class="flex items-center justify-between p-6 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Preview</h3>
-                <button id="closePreview" class="text-gray-500 hover:text-gray-700 p-2">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div id="previewContent" class="p-6 overflow-y-auto max-h-[calc(90vh-100px)]"></div>
-        </div>
+  <div class="flex flex-wrap gap-1 p-2 border-b border-gray-200">
+    <select id="block-select" class="text-sm border rounded-md px-2 py-1 cursor-pointer">
+      <option value="p">Paragraf</option>
+      <option value="h1">H1</option>
+      <option value="h2">H2</option>
+      <option value="h3">H3</option>
+      <option value="h4">H4</option>
+      <option value="h5">H5</option>
+      <option value="h6">H6</option>
+    </select>
+
+    <div class="w-px bg-gray-200 mx-1"></div>
+
+    <button class="tb-btn px-2 py-1 text-xs border rounded-md" data-cmd="bold"><b>Bold</b></button>
+    <button class="tb-btn px-2 py-1 text-xs border rounded-md" data-cmd="italic"><i>Italic</i></button>
+
+    <div class="w-px bg-gray-200 mx-1"></div>
+
+    <button class="tb-btn px-2 py-1 text-xs border rounded-md" data-cmd="insertUnorderedList">• List</button>
+    <button class="tb-btn px-2 py-1 text-xs border rounded-md" data-cmd="insertOrderedList">1. Number</button>
+
+    <div class="w-px bg-gray-200 mx-1"></div>
+
+    <button class="tb-btn px-2 py-1 text-xs border rounded-md underline" id="btn-underline">Underline</button>
+
+    <div class="w-px bg-gray-200 mx-1"></div>
+
+    <button class="tb-btn px-2 py-1 text-xs border rounded-md" id="btn-link">Link</button>
+    <button class="tb-btn px-2 py-1 text-xs border rounded-md" id="btn-img">Image</button>
+
+    <div class="w-px bg-gray-200 mx-1"></div>
+
+    <button class="tb-btn px-2 py-1 text-xs border rounded-md" id="btn-load">Muat HTML</button>
+    <button class="tb-btn px-2 py-1 text-xs border rounded-md" id="btn-copy">Salin</button>
+  </div>
+
+  <section class="p-4">
+    <div id="editor-area" contenteditable="true"
+      class="min-h-[320px] outline-none text-[15px] text-gray-800 empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400"
+      data-placeholder="Mulai menulis di sini...">
     </div>
+  </section>
 
-    <!-- Export Modal -->
-    <div id="exportModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-6">
-        <div class="bg-white rounded-xl max-w-2xl w-full overflow-hidden shadow-2xl">
-            <div class="flex items-center justify-between p-6 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">HTML Copied!</h3>
-                <button id="closeExport" class="text-gray-500 hover:text-gray-700 p-2">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <div class="flex items-center justify-center py-8">
-                    <div class="text-center">
-                        <div class="mb-4">
-                            <i class="fas fa-check-circle text-green-600 text-4xl"></i>
-                        </div>
-                        <p class="text-gray-600 mb-2">HTML berhasil disalin ke clipboard!</p>
-                        <p class="text-sm text-gray-500">Anda bisa paste di Word, email, atau aplikasi lain.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div id="modal-container"></div>
+
+</main>
+
+<script>
+const editor = document.getElementById('editor-area');
+const blockSel = document.getElementById('block-select');
+const modalContainer = document.getElementById('modal-container');
+let savedRange = null;
+
+function saveRange() {
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) savedRange = sel.getRangeAt(0).cloneRange();
+}
+function restoreRange() {
+  if (!savedRange) return;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(savedRange);
+}
+
+function exec(cmd, val) {
+  editor.focus();
+  document.execCommand(cmd, false, val || null);
+}
+
+document.querySelectorAll('.tb-btn[data-cmd]').forEach(btn => {
+  btn.addEventListener('mousedown', e => {
+    e.preventDefault();
+    exec(btn.dataset.cmd);
+  });
+});
+
+blockSel.addEventListener('change', () => {
+  exec('formatBlock', blockSel.value);
+});
+
+document.getElementById('btn-underline').addEventListener('mousedown', e => {
+  e.preventDefault();
+  exec('underline');
+});
+
+function updateBlockSelect() {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+
+  let node = sel.getRangeAt(0).startContainer;
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+
+  const blockTags = ['H1','H2','H3','H4','H5','H6','P','BLOCKQUOTE'];
+  while (node && node !== editor) {
+    if (blockTags.includes(node.nodeName)) {
+      const tag = node.nodeName.toLowerCase();
+      const match = [...blockSel.options].find(o => o.value === tag);
+      if (match) blockSel.value = tag;
+      else blockSel.value = 'p';
+      return;
+    }
+    node = node.parentNode;
+  }
+  blockSel.value = 'p';
+}
+
+editor.addEventListener('keyup', updateBlockSelect);
+editor.addEventListener('mouseup', updateBlockSelect);
+editor.addEventListener('selectionchange', updateBlockSelect);
+document.addEventListener('selectionchange', () => {
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount && editor.contains(sel.getRangeAt(0).startContainer)) {
+    updateBlockSelect();
+  }
+});
+
+function showModal(content, callback) {
+  modalContainer.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:50;">
+      ${content}
     </div>
+  `;
 
-    <script>
-        const editor = document.getElementById('editor');
-        const formatBlock = document.getElementById('formatBlock');
-        const toolbar = document.getElementById('toolbar');
-        const placeholder = document.getElementById('placeholder');
-        const previewModal = document.getElementById('previewModal');
-        const previewContent = document.getElementById('previewContent');
-        const exportModal = document.getElementById('exportModal');
-        const htmlCode = document.getElementById('htmlCode');
+  const overlay = modalContainer.firstElementChild;
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) modalContainer.innerHTML = '';
+  });
 
-        // Show/hide toolbar based on content and position it near cursor
-        function toggleToolbar() {
-            const hasContent = editor.innerHTML.trim() !== '';
-            if (hasContent) {
-                positionToolbar();
-                toolbar.classList.add('visible');
-                toolbar.style.display = 'flex';
-                placeholder.classList.add('hidden');
-            } else {
-                toolbar.classList.remove('visible');
-                toolbar.style.display = 'none';
-                placeholder.classList.remove('hidden');
-            }
-        }
+  const cancel = overlay.querySelector('.btn-cancel');
+  if (cancel) cancel.onclick = () => modalContainer.innerHTML = '';
 
-        // Position toolbar near cursor
-        function positionToolbar() {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const rect = range.getBoundingClientRect();
-                
-                // Get editor bounds to ensure toolbar stays within editor area
-                const editorRect = editor.getBoundingClientRect();
-                
-                // Position toolbar above the cursor
-                let top = rect.top - toolbar.offsetHeight - 10;
-                let left = rect.left;
-                
-                // Ensure toolbar doesn't go above viewport
-                if (top < 10) {
-                    top = rect.bottom + 10;
-                }
-                
-                // Ensure toolbar doesn't go beyond right edge
-                if (left + toolbar.offsetWidth > window.innerWidth - 10) {
-                    left = window.innerWidth - toolbar.offsetWidth - 10;
-                }
-                
-                // Ensure toolbar doesn't go beyond left edge
-                if (left < 10) {
-                    left = 10;
-                }
-                
-                toolbar.style.top = top + 'px';
-                toolbar.style.left = left + 'px';
-            }
-        }
+  callback && callback(overlay);
+}
 
-        // Get current block element at cursor position
-        function getCurrentBlockElement() {
-            const selection = window.getSelection();
-            if (selection.rangeCount === 0) return null;
-            
-            let node = selection.focusNode;
-            if (node.nodeType === Node.TEXT_NODE) {
-                node = node.parentElement;
-            }
-            
-            while (node && node !== editor) {
-                if (node.tagName && ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'DIV', 'BLOCKQUOTE'].includes(node.tagName)) {
-                    return node;
-                }
-                node = node.parentElement;
-            }
-            
-            return null;
-        }
+document.getElementById('btn-link').onclick = () => {
+  saveRange();
+  showModal(`
+    <div class="bg-white w-[380px] rounded-xl p-5 space-y-3 shadow-xl">
+      <h3 class="font-semibold">Sisipkan Link</h3>
+      <input id="m-text" class="w-full border px-3 py-2 rounded" placeholder="Teks" />
+      <input id="m-url" class="w-full border px-3 py-2 rounded" placeholder="URL" />
+      <div class="flex justify-end gap-2">
+        <button class="btn-cancel px-3 py-1 bg-gray-200 rounded">Batal</button>
+        <button id="m-ok" class="px-3 py-1 bg-blue-600 text-white rounded">OK</button>
+      </div>
+    </div>
+  `, c => {
+    c.querySelector('#m-ok').onclick = () => {
+      const text = c.querySelector('#m-text').value.trim();
+      const url = c.querySelector('#m-url').value.trim();
+      if (!url) return;
+      restoreRange();
+      exec('insertHTML', `<a class="text-blue-600 underline" href="${url}" target="_blank">${text || url}</a>`);
+      modalContainer.innerHTML = '';
+    };
+  });
+};
 
-        // Update format selector based on current position
-        function updateFormatSelector() {
-            const currentBlock = getCurrentBlockElement();
-            if (currentBlock) {
-                const tagName = currentBlock.tagName.toLowerCase();
-                if (['h1', 'h2', 'h3'].includes(tagName)) {
-                    formatBlock.value = tagName;
-                } else {
-                    formatBlock.value = 'p';
-                }
-            } else {
-                formatBlock.value = 'p';
-            }
-        }
+document.getElementById('btn-img').onclick = () => {
+  saveRange();
+  showModal(`
+    <div class="bg-white w-[380px] rounded-xl p-5 space-y-3 shadow-xl">
+      <h3 class="font-semibold">Sisipkan Gambar</h3>
+      <input id="m-src" class="w-full border px-3 py-2 rounded" placeholder="URL gambar" />
+      <div class="flex justify-end gap-2">
+        <button class="btn-cancel px-3 py-1 bg-gray-200 rounded">Batal</button>
+        <button id="m-ok" class="px-3 py-1 bg-blue-600 text-white rounded">OK</button>
+      </div>
+    </div>
+  `, c => {
+    c.querySelector('#m-ok').onclick = () => {
+      const src = c.querySelector('#m-src').value.trim();
+      if (!src) return;
+      restoreRange();
+      exec('insertImage', src);
+      modalContainer.innerHTML = '';
+    };
+  });
+};
 
-        // Apply format to current line/selection
-        function applyFormat(format) {
-            const selection = window.getSelection();
-            if (selection.rangeCount === 0) return;
+document.getElementById('btn-load').onclick = () => {
+  const hasContent = editor.innerHTML.trim() !== '';
+  showModal(`
+    <div class="bg-white w-[420px] rounded-xl p-5 space-y-3 shadow-xl">
+      <h3 class="font-semibold">Load HTML</h3>
+      <textarea id="m-html" class="w-full h-32 border px-3 py-2 rounded"></textarea>
+      ${hasContent ? `<p class="text-red-500 text-sm">Editor sudah ada isi</p>` : ''}
+      <div class="flex justify-end gap-2">
+        <button class="btn-cancel px-3 py-1 bg-gray-200 rounded">Batal</button>
+        ${hasContent ? `<button id="m-append" class="px-3 py-1 bg-yellow-500 text-white rounded">Tambah</button>` : ''}
+        <button id="m-replace" class="px-3 py-1 bg-blue-600 text-white rounded">OK</button>
+      </div>
+    </div>
+  `, c => {
+    const ta = c.querySelector('#m-html');
+    ta.focus();
+    c.querySelector('#m-replace').onclick = () => {
+      const html = ta.value.trim();
+      if (!html) return;
+      editor.innerHTML = sanitizeHTML(html);
+      modalContainer.innerHTML = '';
+    };
+    const append = c.querySelector('#m-append');
+    if (append) {
+      append.onclick = () => {
+        const html = ta.value.trim();
+        if (!html) return;
+        editor.innerHTML += sanitizeHTML(html);
+        modalContainer.innerHTML = '';
+      };
+    }
+  });
+};
 
-            let currentBlock = getCurrentBlockElement();
-            
-            if (currentBlock && currentBlock !== editor) {
-                const textContent = currentBlock.textContent || currentBlock.innerText;
-                const caretPosition = getCaretPosition(currentBlock);
-                
-                if (format === 'p') {
-                    if (['H1', 'H2', 'H3', 'BLOCKQUOTE'].includes(currentBlock.tagName)) {
-                        const textNode = document.createTextNode(textContent);
-                        const lineBreak = document.createElement('br');
-                        currentBlock.parentNode.insertBefore(textNode, currentBlock);
-                        currentBlock.parentNode.insertBefore(lineBreak, currentBlock);
-                        currentBlock.parentNode.removeChild(currentBlock);
-                        
-                        const newRange = document.createRange();
-                        newRange.setStart(textNode, Math.min(caretPosition, textContent.length));
-                        newRange.collapse(true);
-                        selection.removeAllRanges();
-                        selection.addRange(newRange);
-                    }
-                } else {
-                    const newElement = document.createElement(format.toUpperCase());
-                    newElement.textContent = textContent;
-                    currentBlock.parentNode.replaceChild(newElement, currentBlock);
-                    
-                    const newRange = document.createRange();
-                    const textNode = newElement.firstChild;
-                    if (textNode) {
-                        newRange.setStart(textNode, Math.min(caretPosition, textContent.length));
-                        newRange.collapse(true);
-                        selection.removeAllRanges();
-                        selection.addRange(newRange);
-                    }
-                }
-            } else {
-                // No current block, need to create new formatted element
-                const range = selection.getRangeAt(0);
-                
-                if (format !== 'p') {
-                    // Get selected text or current line text
-                    let textToFormat = '';
-                    
-                    if (range.collapsed) {
-                        // No selection, get current line
-                        const startNode = range.startContainer;
-                        if (startNode.nodeType === Node.TEXT_NODE) {
-                            const textContent = startNode.textContent;
-                            const startOffset = range.startOffset;
-                            
-                            // Find line boundaries
-                            let lineStart = startOffset;
-                            let lineEnd = startOffset;
-                            
-                            // Find start of line
-                            while (lineStart > 0 && textContent[lineStart - 1] !== '\n') {
-                                lineStart--;
-                            }
-                            
-                            // Find end of line
-                            while (lineEnd < textContent.length && textContent[lineEnd] !== '\n') {
-                                lineEnd++;
-                            }
-                            
-                            textToFormat = textContent.substring(lineStart, lineEnd);
-                            
-                            // Create new heading element
-                            const newElement = document.createElement(format.toUpperCase());
-                            newElement.textContent = textToFormat;
-                            
-                            // Replace the text
-                            const newRange = document.createRange();
-                            newRange.setStart(startNode, lineStart);
-                            newRange.setEnd(startNode, lineEnd);
-                            newRange.deleteContents();
-                            newRange.insertNode(newElement);
-                            
-                            // Position cursor at end of new element
-                            const finalRange = document.createRange();
-                            finalRange.selectNodeContents(newElement);
-                            finalRange.collapse(false);
-                            selection.removeAllRanges();
-                            selection.addRange(finalRange);
-                        }
-                    } else {
-                        // Has selection, wrap selected text
-                        textToFormat = range.toString();
-                        const newElement = document.createElement(format.toUpperCase());
-                        newElement.textContent = textToFormat;
-                        
-                        range.deleteContents();
-                        range.insertNode(newElement);
-                        
-                        // Position cursor at end of new element
-                        const newRange = document.createRange();
-                        newRange.selectNodeContents(newElement);
-                        newRange.collapse(false);
-                        selection.removeAllRanges();
-                        selection.addRange(newRange);
-                    }
-                }
-            }
-            
-            updateFormatSelector();
-        }
+document.getElementById('btn-copy').onclick = () => {
+  const clean = editor.innerHTML.replace(/ class="[^"]*"/g, '');
+  showModal(`
+    <div class="bg-white w-[400px] rounded-xl p-5 space-y-3 shadow-xl">
+      <h3 class="font-semibold">Copy HTML</h3>
+      <div class="bg-gray-100 p-2 text-sm rounded max-h-40 overflow-auto">${clean.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      <div class="flex justify-end gap-2">
+        <button class="btn-cancel px-3 py-1 bg-gray-200 rounded">Tutup</button>
+        <button id="m-ok" class="px-3 py-1 bg-blue-600 text-white rounded">Copy</button>
+      </div>
+    </div>
+  `, c => {
+    c.querySelector('#m-ok').onclick = () => {
+      navigator.clipboard.writeText(clean);
+      modalContainer.innerHTML = '';
+    };
+  });
+};
 
-        // Get caret position within an element
-        function getCaretPosition(element) {
-            const selection = window.getSelection();
-            if (selection.rangeCount === 0) return 0;
-            
-            const range = selection.getRangeAt(0);
-            const preCaretRange = range.cloneRange();
-            preCaretRange.selectNodeContents(element);
-            preCaretRange.setEnd(range.endContainer, range.endOffset);
-            return preCaretRange.toString().length;
-        }
+function sanitizeHTML(html) {
+  return html.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '');
+}
+</script>
 
-        // Update button states
-        function updateButtonStates() {
-            document.querySelectorAll('.toolbar-btn[data-command]').forEach(btn => {
-                const command = btn.dataset.command;
-                if (document.queryCommandState(command)) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-        }
-
-        // Handle selection changes
-        function handleSelectionChange() {
-            updateFormatSelector();
-            updateButtonStates();
-        }
-
-        // Focus management
-        editor.addEventListener('focus', function() {
-            setTimeout(() => {
-                toggleToolbar();
-            }, 100);
-        });
-
-        editor.addEventListener('input', function() {
-            toggleToolbar();
-            updateButtonStates();
-        });
-
-        editor.addEventListener('keyup', function() {
-            handleSelectionChange();
-            setTimeout(() => {
-                if (editor.innerHTML.trim() !== '') {
-                    positionToolbar();
-                }
-            }, 10);
-        });
-
-        editor.addEventListener('mouseup', function() {
-            handleSelectionChange();
-            setTimeout(() => {
-                if (editor.innerHTML.trim() !== '') {
-                    positionToolbar();
-                }
-            }, 10);
-        });
-
-        // Hide toolbar when clicking outside editor
-        document.addEventListener('click', function(e) {
-            if (!editor.contains(e.target) && !toolbar.contains(e.target)) {
-                if (editor.innerHTML.trim() === '') {
-                    toolbar.classList.remove('visible');
-                    toolbar.style.display = 'none';
-                }
-            }
-        });
-
-        // Listen for selection changes
-        document.addEventListener('selectionchange', function() {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0 && editor.contains(selection.focusNode)) {
-                handleSelectionChange();
-            }
-        });
-
-        // Format block selection
-        formatBlock.addEventListener('change', function() {
-            applyFormat(this.value);
-            editor.focus();
-        });
-
-        // Toolbar buttons
-        document.querySelectorAll('.toolbar-btn[data-command]').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const command = this.dataset.command;
-                document.execCommand(command, false, null);
-                updateButtonStates();
-                editor.focus();
-            });
-        });
-
-        // Special buttons
-        document.getElementById('blockquoteBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            applyFormat('blockquote');
-            editor.focus();
-        });
-
-        document.getElementById('codeBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const selectedText = range.toString();
-                if (selectedText) {
-                    const codeElement = document.createElement('code');
-                    codeElement.textContent = selectedText;
-                    range.deleteContents();
-                    range.insertNode(codeElement);
-                    selection.removeAllRanges();
-                }
-            }
-            editor.focus();
-        });
-
-        document.getElementById('linkBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            const url = prompt('Enter URL:');
-            if (url) {
-                document.execCommand('createLink', false, url);
-            }
-            editor.focus();
-        });
-
-        // Clean HTML function
-        function cleanHtml(html) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            
-            function cleanElement(element) {
-                if (element.hasAttribute('style') && !element.getAttribute('style').trim()) {
-                    element.removeAttribute('style');
-                }
-                
-                const unwantedAttrs = ['class', 'id', 'data-mce-bogus'];
-                unwantedAttrs.forEach(attr => {
-                    if (element.hasAttribute(attr)) {
-                        element.removeAttribute(attr);
-                    }
-                });
-                
-                Array.from(element.children).forEach(child => {
-                    cleanElement(child);
-                });
-            }
-            
-            Array.from(tempDiv.children).forEach(child => {
-                cleanElement(child);
-            });
-            
-            const allElements = tempDiv.querySelectorAll('*');
-            allElements.forEach(el => cleanElement(el));
-            
-            return tempDiv.innerHTML;
-        }
-
-        // Convert lists to text
-        function convertListsToText(element) {
-            const lists = element.querySelectorAll('ol, ul');
-            
-            lists.forEach(list => {
-                const isOrdered = list.tagName === 'OL';
-                const listItems = list.querySelectorAll('li');
-                let textContent = '';
-                
-                listItems.forEach((li, index) => {
-                    if (isOrdered) {
-                        textContent += `${index + 1}. ${li.textContent.trim()}\n`;
-                    } else {
-                        textContent += `• ${li.textContent.trim()}\n`;
-                    }
-                });
-                
-                const textNode = document.createTextNode(textContent.trim());
-                list.parentNode.replaceChild(textNode, list);
-            });
-        }
-
-        // Add spaces to tags
-        function addSpacesToTags(html) {
-            html = cleanHtml(html);
-            html = html.replace(/(\S)(<(?:strong|b|em|i|u|s|code|a)[^>]*>)/gi, '$1 $2');
-            html = html.replace(/(<\/(?:strong|b|em|i|u|s|code|a)>)(\S)/gi, '$1 $2');
-            return html;
-        }
-
-        // Export HTML with improved functionality
-        function exportHtml() {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = editor.innerHTML;
-            
-            // Convert <br><br> patterns to proper paragraph breaks
-            let htmlContent = tempDiv.innerHTML;
-            
-            // First, handle multiple <br> tags and convert to paragraph markers
-            htmlContent = htmlContent.replace(/<br\s*\/?>\s*<br\s*\/?>/gi, '||PARAGRAPH_BREAK||');
-            htmlContent = htmlContent.replace(/<br\s*\/?>/gi, '\n');
-            
-            // Split content by paragraph breaks
-            const sections = htmlContent.split('||PARAGRAPH_BREAK||');
-            let processedSections = [];
-            
-            sections.forEach(section => {
-                section = section.trim();
-                if (section) {
-                    // Check if section is already a heading or block element
-                    const tempSectionDiv = document.createElement('div');
-                    tempSectionDiv.innerHTML = section;
-                    
-                    const hasBlockElement = tempSectionDiv.querySelector('h1, h2, h3, h4, h5, h6, blockquote, hr');
-                    
-                    if (hasBlockElement) {
-                        // Already has block element, keep as is
-                        processedSections.push(section.replace(/\n/g, ' ').trim());
-                    } else {
-                        // Regular text, wrap in paragraph or keep as plain text
-                        const cleanSection = section.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-                        if (cleanSection) {
-                            processedSections.push(cleanSection);
-                        }
-                    }
-                }
-            });
-            
-            // Join sections with double line breaks
-            let finalHtml = processedSections.join('\n\n');
-            
-            // Now process the content for lists and clean formatting
-            tempDiv.innerHTML = finalHtml;
-            convertListsToText(tempDiv);
-            
-            finalHtml = tempDiv.innerHTML;
-            finalHtml = finalHtml
-                .replace(/<p[^>]*>\s*<\/p>/g, '')
-                .replace(/<div[^>]*>/g, '')
-                .replace(/<\/div>/g, '')
-                .replace(/>\s+</g, '><')
-                .replace(/^\s+|\s+$/g, '');
-            
-            finalHtml = addSpacesToTags(finalHtml);
-            
-            // Final cleaning
-            finalHtml = finalHtml
-                .replace(/\n\n+/g, '\n\n')
-                .replace(/^\n+|\n+$/g, '')
-                .replace(/ {2,}/g, ' ')
-                .trim();
-            
-            finalHtml = cleanHtml(finalHtml);
-            
-            return finalHtml;
-        }
-
-        // Modal handlers
-        document.getElementById('previewBtn').addEventListener('click', function() {
-            // Create proper preview with formatted content
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = editor.innerHTML;
-            tempDiv.className = 'editor-content'; // Apply same styles as editor
-            
-            previewContent.innerHTML = '';
-            previewContent.appendChild(tempDiv);
-            previewModal.classList.remove('hidden');
-        });
-
-        document.getElementById('copyBtn').addEventListener('click', function() {
-            const html = exportHtml();
-            navigator.clipboard.writeText(html).then(() => {
-                exportModal.classList.remove('hidden');
-                
-                // Auto close after 2 seconds
-                setTimeout(() => {
-                    exportModal.classList.add('hidden');
-                }, 2000);
-            }).catch(() => {
-                alert('Gagal menyalin ke clipboard. Silakan coba lagi.');
-            });
-        });
-
-        // Close modals
-        document.getElementById('closePreview').addEventListener('click', function() {
-            previewModal.classList.add('hidden');
-        });
-
-        document.getElementById('closeExport').addEventListener('click', function() {
-            exportModal.classList.add('hidden');
-        });
-
-        [previewModal, exportModal].forEach(modal => {
-            modal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    this.classList.add('hidden');
-                }
-            });
-        });
-
-        // Keyboard shortcuts
-        editor.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const selection = window.getSelection();
-                if (selection.rangeCount > 0) {
-                    const range = selection.getRangeAt(0);
-                    
-                    // Check if we're in a heading or special block
-                    const currentBlock = getCurrentBlockElement();
-                    
-                    if (currentBlock && ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE'].includes(currentBlock.tagName)) {
-                        // If in heading or blockquote, create new line after the block
-                        const br1 = document.createElement('br');
-                        const br2 = document.createElement('br');
-                        
-                        // Insert after the current block
-                        currentBlock.parentNode.insertBefore(br1, currentBlock.nextSibling);
-                        currentBlock.parentNode.insertBefore(br2, br1.nextSibling);
-                        
-                        // Move cursor after the line breaks
-                        const newRange = document.createRange();
-                        newRange.setStartAfter(br2);
-                        newRange.collapse(true);
-                        selection.removeAllRanges();
-                        selection.addRange(newRange);
-                    } else {
-                        // Normal paragraph behavior - create double line breaks for paragraph separation
-                        const br1 = document.createElement('br');
-                        const br2 = document.createElement('br');
-                        
-                        range.insertNode(br1);
-                        range.setStartAfter(br1);
-                        range.insertNode(br2);
-                        range.setStartAfter(br2);
-                        range.collapse(true);
-                        selection.removeAllRanges();
-                        selection.addRange(range);
-                    }
-                }
-                return false;
-            }
-            
-            if (e.ctrlKey || e.metaKey) {
-                switch(e.key) {
-                    case 'b':
-                        e.preventDefault();
-                        document.execCommand('bold');
-                        updateButtonStates();
-                        break;
-                    case 'i':
-                        e.preventDefault();
-                        document.execCommand('italic');
-                        updateButtonStates();
-                        break;
-                    case 'u':
-                        e.preventDefault();
-                        document.execCommand('underline');
-                        updateButtonStates();
-                        break;
-                    case 'z':
-                        if (e.shiftKey) {
-                            e.preventDefault();
-                            document.execCommand('redo');
-                        } else {
-                            e.preventDefault();
-                            document.execCommand('undo');
-                        }
-                        break;
-                    case 'y':
-                        e.preventDefault();
-                        document.execCommand('redo');
-                        break;
-                }
-            }
-        });
-
-        // Paste handling
-        editor.addEventListener('paste', function(e) {
-            e.preventDefault();
-            const clipboardData = e.clipboardData || window.clipboardData;
-            
-            let pastedContent = clipboardData.getData('text/html');
-            
-            if (!pastedContent) {
-                // Handle plain text with paragraph preservation
-                let pastedText = clipboardData.getData('text/plain');
-                if (pastedText) {
-                    // Split by double line breaks first (paragraph breaks)
-                    const paragraphs = pastedText.split(/\n\s*\n/);
-                    let processedContent = '';
-                    
-                    paragraphs.forEach((paragraph, index) => {
-                        const trimmedParagraph = paragraph.trim();
-                        if (trimmedParagraph) {
-                            // Replace single line breaks within paragraph with spaces
-                            // but preserve intentional line breaks
-                            const cleanParagraph = trimmedParagraph.replace(/\n(?!\s*\n)/g, ' ').replace(/\s+/g, ' ');
-                            processedContent += cleanParagraph;
-                            
-                            // Add paragraph breaks between paragraphs (except for the last one)
-                            if (index < paragraphs.length - 1) {
-                                processedContent += '<br><br>';
-                            }
-                        }
-                    });
-                    
-                    // If original text had single line breaks without double breaks, preserve them
-                    if (paragraphs.length === 1 && pastedText.includes('\n')) {
-                        processedContent = pastedText.replace(/\n/g, '<br>');
-                    }
-                    
-                    document.execCommand('insertHTML', false, processedContent);
-                }
-            } else {
-                // Handle HTML content
-                let tempDiv = document.createElement('div');
-                tempDiv.innerHTML = pastedContent;
-                
-                // Remove unwanted elements
-                const unwantedElements = ['script', 'style', 'meta', 'link'];
-                unwantedElements.forEach(tag => {
-                    const elements = tempDiv.querySelectorAll(tag);
-                    elements.forEach(el => el.remove());
-                });
-                
-                // Clean attributes but preserve structure
-                const allElements = tempDiv.querySelectorAll('*');
-                allElements.forEach(el => {
-                    const allowedAttrs = ['href'];
-                    const attrs = Array.from(el.attributes);
-                    attrs.forEach(attr => {
-                        if (!allowedAttrs.includes(attr.name.toLowerCase())) {
-                            el.removeAttribute(attr.name);
-                        }
-                    });
-                });
-                
-                // Convert HTML structure to our format
-                let htmlContent = '';
-                const processElement = (element) => {
-                    if (element.nodeType === Node.TEXT_NODE) {
-                        return element.textContent;
-                    }
-                    
-                    if (element.nodeType === Node.ELEMENT_NODE) {
-                        const tagName = element.tagName.toLowerCase();
-                        
-                        // Block elements - preserve as separate blocks
-                        if (['p', 'div'].includes(tagName)) {
-                            let content = '';
-                            for (let child of element.childNodes) {
-                                content += processElement(child);
-                            }
-                            return content.trim() + '<br><br>';
-                        }
-                        
-                        // Headings - preserve as headings
-                        if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
-                            let content = '';
-                            for (let child of element.childNodes) {
-                                content += processElement(child);
-                            }
-                            return `<${tagName}>${content.trim()}</${tagName}><br><br>`;
-                        }
-                        
-                        // List items
-                        if (tagName === 'li') {
-                            let content = '';
-                            for (let child of element.childNodes) {
-                                content += processElement(child);
-                            }
-                            return content.trim() + '<br>';
-                        }
-                        
-                        // Line breaks
-                        if (tagName === 'br') {
-                            return '<br>';
-                        }
-                        
-                        // Inline elements - preserve formatting
-                        if (['strong', 'b', 'em', 'i', 'u', 's', 'code', 'a'].includes(tagName)) {
-                            let content = '';
-                            for (let child of element.childNodes) {
-                                content += processElement(child);
-                            }
-                            return `<${tagName}${element.hasAttribute('href') ? ` href="${element.getAttribute('href')}"` : ''}>${content}</${tagName}>`;
-                        }
-                        
-                        // Default - process children
-                        let content = '';
-                        for (let child of element.childNodes) {
-                            content += processElement(child);
-                        }
-                        return content;
-                    }
-                    
-                    return '';
-                };
-                
-                htmlContent = processElement(tempDiv);
-                
-                // Clean up extra breaks and spaces
-                htmlContent = htmlContent
-                    .replace(/<br><br><br>/g, '<br><br>')
-                    .replace(/^\s*<br><br>/, '')
-                    .replace(/<br><br>\s*$/, '')
-                    .trim();
-                
-                document.execCommand('insertHTML', false, htmlContent);
-            }
-        });
-
-        // Initialize
-        toggleToolbar();
-    </script>
 </body>
 </html>
