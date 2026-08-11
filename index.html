@@ -24,12 +24,60 @@
     #editor-area h4 { font-size: 1.1em; font-weight: 600; margin: 0.4em 0; }
     #editor-area h5 { font-size: 0.95em; font-weight: 600; margin: 0.4em 0; }
     #editor-area h6 { font-size: 0.85em; font-weight: 600; margin: 0.4em 0; color: #777; }
+
+    #editor-area table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 0.6em 0;
+    }
+    #editor-area table.tbl-selected {
+      outline: 2px solid #2563eb;
+      outline-offset: 2px;
+    }
+    #editor-area td, #editor-area th {
+      border: 1px solid #d1d5db;
+      padding: 6px 10px;
+      min-width: 40px;
+      vertical-align: top;
+    }
+    #editor-area th {
+      background: #f3f4f6;
+      font-weight: 600;
+      text-align: left;
+    }
+    #editor-area td:focus, #editor-area th:focus {
+      outline: 2px solid #93c5fd;
+      outline-offset: -2px;
+    }
+
+    /* Floating table toolbar */
+    #table-toolbar {
+      position: absolute;
+      display: none;
+      background: #111827;
+      border-radius: 8px;
+      padding: 4px;
+      gap: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      z-index: 40;
+    }
+    #table-toolbar.show { display: flex; }
+    #table-toolbar button {
+      color: #fff;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+    #table-toolbar button:hover { background: #374151; }
+    #table-toolbar button.danger:hover { background: #7f1d1d; }
+    #table-toolbar .sep { width: 1px; background: #374151; margin: 2px 1px; }
   </style>
 </head>
 
 <body class="bg-gray-50 font-sans">
 
-<main class="max-w-3xl mx-auto my-10 bg-white">
+<main class="max-w-3xl mx-auto my-10 bg-white relative">
 
   <div class="flex flex-wrap gap-1 p-2 sticky top-0 bg-white z-10 rounded-t-xl">
     <select id="block-select" class="text-sm  px-2 py-1 cursor-pointer">
@@ -60,6 +108,7 @@
 
     <button class="tb-btn px-2 py-1 text-xs border rounded-md" id="btn-link">Link</button>
     <button class="tb-btn px-2 py-1 text-xs border rounded-md" id="btn-img">Image</button>
+    <button class="tb-btn px-2 py-1 text-xs border rounded-md" id="btn-table">Tabel</button>
 
     <div class="w-px bg-gray-200 mx-1"></div>
 
@@ -76,6 +125,15 @@
   </section>
 
   <div id="modal-container"></div>
+  <div id="table-toolbar">
+    <button id="tbl-add-row" title="Tambah baris di bawah">+ Baris</button>
+    <button id="tbl-add-col" title="Tambah kolom di kanan">+ Kolom</button>
+    <div class="sep"></div>
+    <button id="tbl-del-row" title="Hapus baris ini">- Baris</button>
+    <button id="tbl-del-col" title="Hapus kolom ini">- Kolom</button>
+    <div class="sep"></div>
+    <button id="tbl-del-table" class="danger" title="Hapus seluruh tabel">Hapus Tabel</button>
+  </div>
 
 </main>
 
@@ -83,7 +141,11 @@
 const editor = document.getElementById('editor-area');
 const blockSel = document.getElementById('block-select');
 const modalContainer = document.getElementById('modal-container');
+const tableToolbar = document.getElementById('table-toolbar');
+const mainEl = document.querySelector('main');
 let savedRange = null;
+let activeTable = null;
+let activeCell = null;
 
 function saveRange() {
   const sel = window.getSelection();
@@ -304,6 +366,169 @@ document.getElementById('btn-copy').onclick = () => {
 function sanitizeHTML(html) {
   return html.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '');
 }
+
+document.getElementById('btn-table').onclick = () => {
+  saveRange();
+  showModal(`
+    <div class="bg-white w-[360px] rounded-xl p-5 space-y-3 shadow-xl">
+      <h3 class="font-semibold">Sisipkan Tabel</h3>
+      <div class="flex gap-3">
+        <label class="flex-1 text-sm text-gray-600">
+          Baris
+          <input id="m-rows" type="number" min="1" max="20" value="3" class="w-full border px-3 py-2 rounded mt-1" />
+        </label>
+        <label class="flex-1 text-sm text-gray-600">
+          Kolom
+          <input id="m-cols" type="number" min="1" max="10" value="3" class="w-full border px-3 py-2 rounded mt-1" />
+        </label>
+      </div>
+      <label class="flex items-center gap-2 text-sm text-gray-600">
+        <input id="m-header" type="checkbox" checked />
+        Baris pertama sebagai header
+      </label>
+      <div class="flex justify-end gap-2">
+        <button class="btn-cancel px-3 py-1 bg-gray-200 rounded">Batal</button>
+        <button id="m-ok" class="px-3 py-1 bg-blue-600 text-white rounded">Sisipkan</button>
+      </div>
+    </div>
+  `, c => {
+    c.querySelector('#m-ok').onclick = () => {
+      let rows = parseInt(c.querySelector('#m-rows').value, 10) || 1;
+      let cols = parseInt(c.querySelector('#m-cols').value, 10) || 1;
+      rows = Math.max(1, Math.min(20, rows));
+      cols = Math.max(1, Math.min(10, cols));
+      const withHeader = c.querySelector('#m-header').checked;
+      const tableHTML = buildTableHTML(rows, cols, withHeader);
+      restoreRange();
+      exec('insertHTML', tableHTML);
+      modalContainer.innerHTML = '';
+    };
+  });
+};
+
+function buildTableHTML(rows, cols, withHeader) {
+  let html = '<table>';
+  for (let r = 0; r < rows; r++) {
+    html += '<tr>';
+    const isHeaderRow = withHeader && r === 0;
+    const cellTag = isHeaderRow ? 'th' : 'td';
+    for (let c = 0; c < cols; c++) {
+      html += `<${cellTag}><br></${cellTag}>`;
+    }
+    html += '</tr>';
+  }
+  html += '</table><p><br></p>';
+  return html;
+}
+
+editor.addEventListener('click', (e) => {
+  const cell = e.target.closest('td, th');
+  const table = e.target.closest('table');
+
+  editor.querySelectorAll('table.tbl-selected').forEach(t => t.classList.remove('tbl-selected'));
+
+  if (cell && table && editor.contains(table)) {
+    activeTable = table;
+    activeCell = cell;
+    table.classList.add('tbl-selected');
+    positionTableToolbar(table);
+  } else {
+    hideTableToolbar();
+  }
+});
+
+document.addEventListener('scroll', () => {
+  if (tableToolbar.classList.contains('show') && activeTable) {
+    positionTableToolbar(activeTable);
+  }
+}, true);
+
+function positionTableToolbar(table) {
+  const tableRect = table.getBoundingClientRect();
+  const mainRect = mainEl.getBoundingClientRect();
+  tableToolbar.style.left = (tableRect.left - mainRect.left) + 'px';
+  tableToolbar.style.top = (tableRect.top - mainRect.top - tableToolbar.offsetHeight - 8) + 'px';
+  tableToolbar.classList.add('show');
+}
+
+function hideTableToolbar() {
+  tableToolbar.classList.remove('show');
+  if (activeTable) activeTable.classList.remove('tbl-selected');
+  activeTable = null;
+  activeCell = null;
+}
+
+document.addEventListener('mousedown', (e) => {
+  if (!editor.contains(e.target) && !tableToolbar.contains(e.target)) {
+    hideTableToolbar();
+  }
+});
+
+tableToolbar.querySelectorAll('button').forEach(btn => {
+  btn.addEventListener('mousedown', e => e.preventDefault());
+});
+
+document.getElementById('tbl-add-row').onclick = () => {
+  if (!activeCell || !activeTable) return;
+  const row = activeCell.parentElement;
+  const cellCount = row.children.length;
+  const isHeaderRow = activeCell.tagName === 'TH';
+  const newRow = document.createElement('tr');
+  for (let i = 0; i < cellCount; i++) {
+    const td = document.createElement(isHeaderRow ? 'td' : activeCell.tagName.toLowerCase());
+    td.innerHTML = '<br>';
+    newRow.appendChild(td);
+  }
+  row.after(newRow);
+};
+
+document.getElementById('tbl-add-col').onclick = () => {
+  if (!activeCell || !activeTable) return;
+  const colIndex = [...activeCell.parentElement.children].indexOf(activeCell);
+  activeTable.querySelectorAll('tr').forEach(tr => {
+    const refCell = tr.children[colIndex];
+    const tag = refCell ? refCell.tagName.toLowerCase() : 'td';
+    const newCell = document.createElement(tag);
+    newCell.innerHTML = '<br>';
+    if (refCell) refCell.after(newCell);
+    else tr.appendChild(newCell);
+  });
+};
+
+document.getElementById('tbl-del-row').onclick = () => {
+  if (!activeCell || !activeTable) return;
+  const row = activeCell.parentElement;
+  const allRows = activeTable.querySelectorAll('tr');
+  if (allRows.length <= 1) {
+    activeTable.remove();
+    hideTableToolbar();
+    return;
+  }
+  row.remove();
+  hideTableToolbar();
+};
+
+document.getElementById('tbl-del-col').onclick = () => {
+  if (!activeCell || !activeTable) return;
+  const colIndex = [...activeCell.parentElement.children].indexOf(activeCell);
+  const firstRowCellCount = activeTable.querySelector('tr').children.length;
+  if (firstRowCellCount <= 1) {
+    activeTable.remove();
+    hideTableToolbar();
+    return;
+  }
+  activeTable.querySelectorAll('tr').forEach(tr => {
+    const cell = tr.children[colIndex];
+    if (cell) cell.remove();
+  });
+  hideTableToolbar();
+};
+
+document.getElementById('tbl-del-table').onclick = () => {
+  if (!activeTable) return;
+  activeTable.remove();
+  hideTableToolbar();
+};
 </script>
 
 </body>
